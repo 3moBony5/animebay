@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.animebay.stream.ui.screens.home.EpisodeCard
+import io.animebay.stream.ui.screens.search.viewmodel.AnimeDetails
 import io.animebay.stream.ui.screens.search.viewmodel.SearchUiState
 import io.animebay.stream.ui.screens.search.viewmodel.SearchViewModel
 
@@ -36,7 +37,6 @@ fun SearchScreen(
     val uiState by searchViewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
 
-    // لفتح لوحة المفاتيح تلقائياً عند الدخول للشاشة
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
@@ -168,6 +168,31 @@ fun SearchContent(
                         modifier = Modifier,
                         onClick = { onAnimeClick(anime.episodeUrl) }
                     )
+                }
+                
+                // عرض عدد الحلقات إذا كان متاحاً
+                item {
+                    uiState.episodeCount?.let { count ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            backgroundColor = Color(0xFF4CAF50).copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "$count حلقة متاحة",
+                                    color = Color(0xFF8BC34A),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

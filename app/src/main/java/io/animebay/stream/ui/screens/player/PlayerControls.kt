@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -43,6 +44,10 @@ fun ProfessionalPlayerControls(
     var totalDuration by remember { mutableStateOf(0L) }
     var currentTime by remember { mutableStateOf(0L) }
     var playbackState by remember { mutableStateOf(player.playbackState) }
+    var playbackSpeed by remember { mutableStateOf(1.0f) }
+    var isMuted by remember { mutableStateOf(false) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
+    var showQualityMenu by remember { mutableStateOf(false) }
 
     // Listener لتحديث حالة المشغل
     LaunchedEffect(player) {
@@ -130,16 +135,48 @@ fun ProfessionalPlayerControls(
                     modifier = Modifier.align(Alignment.Center)
                 )
 
-                // عناصر التحكم السفلية
-                BottomControls(
+                // عناصر التحكم السفلية مع السرعة والصوت
+                BottomControlsWithSpeedAndVolume(
                     player = player,
                     currentTime = currentTime,
                     totalDuration = totalDuration,
                     onFullScreenToggle = onFullScreenToggle,
                     isFullScreen = isFullScreen,
+                    playbackSpeed = playbackSpeed,
+                    isMuted = isMuted,
+                    onSpeedChange = { newSpeed ->
+                        playbackSpeed = newSpeed
+                        player.setPlaybackSpeed(newSpeed)
+                    },
+                    onMuteToggle = {
+                        isMuted = !isMuted
+                        player.volume = if (isMuted) 0f else 1f
+                    },
+                    onShowSpeedMenu = { showSpeedMenu = true },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .navigationBarsPadding()
+                )
+            }
+        }
+
+        // قائمة سرعات التشغيل
+        DropdownMenu(
+            expanded = showSpeedMenu,
+            onDismissRequest = { showSpeedMenu = false },
+            modifier = Modifier
+                .background(Color.Black.copy(alpha = 0.9f))
+                .align(Alignment.BottomEnd)
+        ) {
+            val speeds = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+            speeds.forEach { speed ->
+                DropdownMenuItem(
+                    text = { Text("${speed}x", color = Color.White) },
+                    onClick = {
+                        playbackSpeed = speed
+                        player.setPlaybackSpeed(speed)
+                        showSpeedMenu = false
+                    }
                 )
             }
         }
@@ -223,30 +260,82 @@ private fun CenterControls(
 }
 
 @Composable
-private fun BottomControls(
+private fun BottomControlsWithSpeedAndVolume(
     player: Player,
     currentTime: Long,
     totalDuration: Long,
     onFullScreenToggle: () -> Unit,
     isFullScreen: Boolean,
+    playbackSpeed: Float,
+    isMuted: Boolean,
+    onSpeedChange: (Float) -> Unit,
+    onMuteToggle: () -> Unit,
+    onShowSpeedMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        // شريط التقدم
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(formatDuration(currentTime), color = Color.White, fontSize = 14.sp)
             Slider(
                 value = currentTime.toFloat(),
                 onValueChange = { player.seekTo(it.toLong()) },
                 valueRange = 0f..totalDuration.toFloat().coerceAtLeast(1f),
-                colors = SliderDefaults.colors(thumbColor = PrimaryGreen, activeTrackColor = PrimaryGreen, inactiveTrackColor = Color.Gray.copy(alpha = 0.3f)),
+                colors = SliderDefaults.colors(
+                    thumbColor = PrimaryGreen,
+                    activeTrackColor = PrimaryGreen,
+                    inactiveTrackColor = Color.Gray.copy(alpha = 0.3f)
+                ),
                 modifier = Modifier.weight(1f)
             )
             Text(formatDuration(totalDuration), color = Color.White, fontSize = 14.sp)
         }
+        
         Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Spacer(modifier = Modifier.weight(1f))
-            ControlButton(if (isFullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen, "ملء الشاشة", onFullScreenToggle, size = 40.dp)
+        
+        // صف التحكم السفلي
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // أزرار التحكم الإضافية
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // زر كتم الصوت
+                ControlButton(
+                    icon = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                    contentDescription = if (isMuted) "إلغاء كتم الصوت" else "كتم الصوت",
+                    onClick = onMuteToggle,
+                    size = 40.dp
+                )
+
+                // زر سرعة التشغيل
+                ControlButton(
+                    icon = Icons.Default.Speed,
+                    contentDescription = "سرعة التشغيل",
+                    onClick = onShowSpeedMenu,
+                    size = 40.dp
+                )
+                
+                // عرض السرعة الحالية
+                Text(
+                    text = "${playbackSpeed}x",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+
+            // زر ملء الشاشة
+            ControlButton(
+                icon = if (isFullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                contentDescription = if (isFullScreen) "خروج من ملء الشاشة" else "ملء الشاشة",
+                onClick = onFullScreenToggle,
+                size = 40.dp
+            )
         }
     }
 }

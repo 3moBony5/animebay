@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.animebay.stream.data.model.DownloadLink
 import io.animebay.stream.ui.screens.servers.viewmodel.ServersViewModel
 import java.util.UUID
 
@@ -32,9 +33,11 @@ fun ServersScreen(
     serversViewModel: ServersViewModel = viewModel()
 ) {
     val uiState by serversViewModel.uiState.collectAsState()
+    var showDownloads by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = episodeUrl) {
         serversViewModel.loadServers(episodeUrl)
+        serversViewModel.loadDownloadLinks(episodeUrl)
     }
 
     Column(
@@ -51,7 +54,17 @@ fun ServersScreen(
                 }
             },
             backgroundColor = Color(0xFF1A2332),
-            elevation = 0.dp
+            elevation = 0.dp,
+            actions = {
+                // زر تبديل بين سيرفرات المشاهدة وروابط التحميل
+                IconButton(onClick = { showDownloads = !showDownloads }) {
+                    Icon(
+                        if (showDownloads) Icons.Default.Tv else Icons.Default.Download,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                }
+            }
         )
 
         when {
@@ -66,10 +79,22 @@ fun ServersScreen(
                 }
             }
             else -> {
-                ServersList(
-                    serversByQuality = uiState.serversByQuality,
-                    onServerClick = onServerClick
-                )
+                if (showDownloads) {
+                    // عرض روابط التحميل المباشرة
+                    DownloadsList(
+                        downloadLinks = uiState.downloadLinks,
+                        onDownloadClick = { downloadLink ->
+                            // فتح الرابط في المتصفح أو تنزيل الملف
+                            // يمكنك إضافة منطق التنزيل هنا
+                        }
+                    )
+                } else {
+                    // عرض سيرفرات المشاهدة
+                    ServersList(
+                        serversByQuality = uiState.serversByQuality,
+                        onServerClick = onServerClick
+                    )
+                }
             }
         }
     }
@@ -108,6 +133,44 @@ private fun ServersList(
 }
 
 @Composable
+private fun DownloadsList(
+    downloadLinks: List<DownloadLink>,
+    onDownloadClick: (DownloadLink) -> Unit
+) {
+    // تجميع الروابط حسب الجودة
+    val groupedByQuality = downloadLinks.groupBy { it.quality }
+    val qualityOrder = listOf("FHD", "HD", "SD", "Unknown")
+    val sortedQualities = groupedByQuality.keys.sortedBy { qualityOrder.indexOf(it) }
+
+    LazyColumn(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        sortedQualities.forEach { quality ->
+            item {
+                QualityHeader("جودة $quality")
+            }
+            
+            val links = groupedByQuality[quality] ?: emptyList()
+            
+            itemsIndexed(
+                items = links,
+                key = { _, _ -> UUID.randomUUID().toString() }
+            ) { _, downloadLink ->
+                DownloadListItem(
+                    downloadLink = downloadLink,
+                    onClick = { onDownloadClick(downloadLink) }
+                )
+            }
+            
+            item { 
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
 private fun QualityHeader(quality: String) {
     Text(
         text = quality,
@@ -128,7 +191,7 @@ private fun ServerListItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFF2E3B4E).copy(alpha = 0.6f))
-            .clickable(onClick = onClick) // رجعنا إلى clickable العادية
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -148,5 +211,57 @@ private fun ServerListItem(
                 fontWeight = FontWeight.Medium
             )
         }
+        
+        Text(
+            text = server.quality,
+            color = Color(0xFF8BC34A),
+            fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
+private fun DownloadListItem(
+    downloadLink: DownloadLink,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF2E3B4E).copy(alpha = 0.6f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.Download,
+                contentDescription = null,
+                tint = Color(0xFF8BC34A),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = downloadLink.host,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = downloadLink.url.take(50) + "...",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 12.sp
+                )
+            }
+        }
+        
+        Text(
+            text = downloadLink.quality,
+            color = Color(0xFF8BC34A),
+            fontSize = 12.sp
+        )
     }
 }
