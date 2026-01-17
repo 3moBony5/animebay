@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "549111434681",
+    "project_id": "anime-bay-3c6b5",
+    "storage_bucket": "anime-bay-3c6b5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:549111434681:android:11fad6a5a08902ca0efa68",
+        "android_client_info": {
+          "package_name": "io.animebay.stream"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "549111434681-o2up18snir460lj19p3a2k514vc4d807.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.animebay.stream",
+            "certificate_hash": "031a273c75d7604866117065f05abb5d7c038fca"
+          }
+        },
+        {
+          "client_id": "549111434681-mq8p39g6u57s9m2e7iut7qug1dsj81l5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa5dCXYkxzj1yAV73Qir__81xplvX9MFU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "549111434681-mq8p39g6u57s9m2e7iut7qug1dsj81l5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
